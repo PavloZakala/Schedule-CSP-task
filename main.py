@@ -3,7 +3,7 @@ from tabulate import tabulate
 
 configs = {
     "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-    "groups": ["TK", "TTP1", "TTP2", "MI", "MI2"],
+    "groups": ["TK", "TTP1", "TTP2", "MI"],
     "subjects": ["Algebra", "Math Anal.", "Geometry", "Programming", "Discrete Math",
            "Algorithms", "Data Str.", "Prob. Th.", "Data Analysis", "Num. Math."],
     "teachers": ["Jake", "Connor", "Callum", "Jacob", "Kyle", "Charlie", "Jacob", "Peter", "Rhys", "Oliver"],
@@ -59,7 +59,12 @@ class Schedule:
 
         self.room_teacher_specs = [set(arr) for arr in self.room_teacher_specs]
 
-        self.subject_per_groups = {self.groups[gi]: set(random.randint(0, self.n_subjects+1) for si in range(self.NUMBER_SUBJECTS_PER_GROUP))
+
+        if heuristics["constraint_propagation"]:
+            self.subject_per_groups = {self.groups[gi]: set((gi + si**2) % self.n_subjects for si in range(self.NUMBER_SUBJECTS_PER_GROUP))
+                                    for  gi in range(self.n_groups)}
+        else:
+            self.subject_per_groups = {self.groups[gi]: set(si for si in range(self.n_lessons))
                                     for  gi in range(self.n_groups)}
 
         self.conditions = [self.check_room_per_lesson, self.check_teacher_per_lesson]
@@ -86,7 +91,7 @@ class Schedule:
             for less in table:
                 all_subj.append(less[2])
             all_subj = set(all_subj)
-            print(self.subject_per_groups[g_name] - all_subj, all_subj)
+
             if len(self.subject_per_groups[g_name] - all_subj) != 0:
                 return False
         return True
@@ -152,6 +157,8 @@ class Schedule:
 
     def backtracking(self, i=0):
         if i == self.n_days * self.n_lessons * self.n_groups:           
+            if self.check_table_subject():
+                return False
             return True
         
         gen = self.get_cell(i)
@@ -185,7 +192,6 @@ class Schedule:
         
         return False
 
-
     def print(self):
         table = dict(indices=["Day", "Group"] + self.lessons)
         for d_idx, d_name in enumerate(self.days):
@@ -208,6 +214,7 @@ heuristics = {
     "minimum_remaining_values": False,
     "degree_heuristic": False,
     "least_constraining_value": False,
+    "constraint_propagation": False
 }
 
 if __name__ == "__main__":
@@ -247,5 +254,4 @@ if __name__ == "__main__":
     
     print("least_constraining_value heuristics", datetime.now() - t1)
 
-
-    # schedule.print()
+    schedule.print()
